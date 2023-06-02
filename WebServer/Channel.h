@@ -22,7 +22,10 @@ class Channel {
   __uint32_t lastEvents_;
 
   // 方便找到上层持有该Channel的对象
-  std::weak_ptr<HttpData> holder_;
+  // weak_ptr是⼀个观测者（不会增加或减少引⽤计数）,同时也没有重载->,和*等运算符 所以不能直接使⽤
+  // 可以通过lock函数得到它的shared_ptr（对象没销毁就返回，销毁了就返回空shared_ptr）
+  // expired函数判断当前对象是否销毁了
+  std::weak_ptr<HttpData> holder_;  
 
  private:
   int parse_URI();
@@ -40,13 +43,14 @@ class Channel {
   ~Channel();
   int getFd();
   void setFd(int fd);
-
+  // 返回weak_ptr所指向的shared_ptr对象
   void setHolder(std::shared_ptr<HttpData> holder) { holder_ = holder; }
   std::shared_ptr<HttpData> getHolder() {
     std::shared_ptr<HttpData> ret(holder_.lock());
     return ret;
   }
 
+  // 设置回调函数
   void setReadHandler(CallBack &&readHandler) { readHandler_ = readHandler; }
   void setWriteHandler(CallBack &&writeHandler) {
     writeHandler_ = writeHandler;
@@ -56,6 +60,10 @@ class Channel {
   }
   void setConnHandler(CallBack &&connHandler) { connHandler_ = connHandler; }
 
+
+  // IO事件回调函数的调⽤接⼝
+  // EventLoop中调⽤Loop开始事件循环 会调⽤Poll得到就绪事件
+  // 然后依次调⽤此函数处理就绪事件
   void handleEvents() {
     events_ = 0;
     if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
@@ -75,9 +83,10 @@ class Channel {
     }
     handleConn();
   }
-  void handleRead();
-  void handleWrite();
-  void handleError(int fd, int err_num, std::string short_msg);
+
+  void handleRead();    // 处理读事件的回调
+  void handleWrite();   // 处理写事件的回调
+  void handleError(int fd, int err_num, std::string short_msg);   // 处理错误事件的回调
   void handleConn();
 
   void setRevents(__uint32_t ev) { revents_ = ev; }

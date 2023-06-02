@@ -97,7 +97,6 @@ void EventLoop::loop() {
   // LOG_TRACE << "EventLoop " << this << " start looping";
   std::vector<SP_Channel> ret;
   while (!quit_) {
-    // cout << "doing" << endl;
     ret.clear();
 
     // 1、epoll_wait阻塞 等待就绪事件
