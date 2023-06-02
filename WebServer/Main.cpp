@@ -1,5 +1,3 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
 #include <getopt.h>
 #include <string>
 #include "EventLoop.h"
@@ -44,6 +42,8 @@ int main(int argc, char *argv[]) {
     #ifndef _PTHREADS
     LOG << "_PTHREADS is not defined !";
     #endif
+
+    // 实例化一个主循环对象，初始化WebServer的单例对象，最后启动WebServer并开启主循环
     EventLoop mainLoop;
     Server myHTTPServer(&mainLoop, threadNum, port);
     myHTTPServer.start();

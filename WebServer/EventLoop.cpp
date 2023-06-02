@@ -1,5 +1,3 @@
-// @Author Lin Ya
-// @Email xxbbb@vip.qq.com
 #include "EventLoop.h"
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
@@ -99,12 +97,12 @@ void EventLoop::loop() {
   while (!quit_) {
     // cout << "doing" << endl;
     ret.clear();
-    ret = poller_->poll();
+    ret = poller_->poll();  // 从poller取出所有活动事件
     eventHandling_ = true;
-    for (auto& it : ret) it->handleEvents();
+    for (auto& it : ret) it->handleEvents();  // 调用活动事件的回调函数
     eventHandling_ = false;
-    doPendingFunctors();
-    poller_->handleExpired();
+    doPendingFunctors(); // 执行额外的函数
+    poller_->handleExpired(); // 执行超时的回调函数
   }
   looping_ = false;
 }

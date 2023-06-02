@@ -52,6 +52,12 @@ Server::Server(EventLoop *loop, int threadNum, int port)
   }
 }
 
+
+/*
+    1. 启动线程池
+    2. 设置了acceptChannel_的handler，分别为读回调和连接回调
+    3. 将acceptChannel_加入poller
+*/
 void Server::start() {
   eventLoopThreadPool_->start();
   // acceptChannel_->setEvents(EPOLLIN | EPOLLET | EPOLLONESHOT);
@@ -71,20 +77,10 @@ void Server::handNewConn() {
   // 循环调用accept接收客户端的连接请求并返回一个新的套接字文件描述符accept_fd
   while ((accept_fd = accept(listenFd_, (struct sockaddr *)&client_addr,
                              &client_addr_len)) > 0) {
-    // 定义一个循环线程池
+    // 从线程池中获取一个eventloop
     EventLoop *loop = eventLoopThreadPool_->getNextLoop();
     LOG << "New connection from " << inet_ntoa(client_addr.sin_addr) << ":"
         << ntohs(client_addr.sin_port);
-    // cout << "new connection" << endl;
-    // cout << inet_ntoa(client_addr.sin_addr) << endl;
-    // cout << ntohs(client_addr.sin_port) << endl;
-    /*
-    // TCP的保活机制默认是关闭的
-    int optval = 0;
-    socklen_t len_optval = 4;
-    getsockopt(accept_fd, SOL_SOCKET,  SO_KEEPALIVE, &optval, &len_optval);
-    cout << "optval ==" << optval << endl;
-    */
     // 限制服务器的最大并发连接数
     if (accept_fd >= MAXFDS) {
       close(accept_fd);
@@ -93,12 +89,10 @@ void Server::handNewConn() {
     // 设为非阻塞模式
     if (setSocketNonBlocking(accept_fd) < 0) {
       LOG << "Set non block failed!";
-      // perror("Set non block failed!");
       return;
     }
 
     setSocketNodelay(accept_fd);
-    // setSocketNoLinger(accept_fd);
 
     shared_ptr<HttpData> req_info(new HttpData(loop, accept_fd));
     req_info->getChannel()->setHolder(req_info);
