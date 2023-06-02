@@ -88,20 +88,30 @@ void EventLoop::queueInLoop(Functor&& cb) {
 }
 
 void EventLoop::loop() {
+  // 开始事件循环，调用该函数的线程必须是该EventLoop所在的线程
   assert(!looping_);
   assert(isInLoopThread());
   looping_ = true;
   quit_ = false;
+
   // LOG_TRACE << "EventLoop " << this << " start looping";
   std::vector<SP_Channel> ret;
   while (!quit_) {
     // cout << "doing" << endl;
     ret.clear();
+
+    // 1、epoll_wait阻塞 等待就绪事件
     ret = poller_->poll();  // 从poller取出所有活动事件
     eventHandling_ = true;
+
+    // 2、处理每个就绪事件(不同channel绑定了不同的callback)
     for (auto& it : ret) it->handleEvents();  // 调用活动事件的回调函数
     eventHandling_ = false;
+
+    // 3、执⾏正在等待的函数(fd注册到epoll内核事件表)
     doPendingFunctors(); // 执行额外的函数
+
+    // 4、处理超时事件 到期了就从定时器⼩根堆中删除(定时器析构会EpollDel掉fd)
     poller_->handleExpired(); // 执行超时的回调函数
   }
   looping_ = false;
