@@ -20,7 +20,7 @@ const int EPOLLWAIT_TIME = 10000;
 
 typedef shared_ptr<Channel> SP_Channel;
 
-Epoll::Epoll() : epollFd_(epoll_create1(EPOLL_CLOEXEC)), events_(EVENTSNUM) {
+Epoll::Epoll() : epollFd_(epoll_create1(EPOLL_CLOEXEC)), events_(EVENTSNUM) {  // epollFd_就是⽤ epoll_create ⽅法返回的 epoll 句柄
   assert(epollFd_ > 0);
 }
 Epoll::~Epoll() {}
